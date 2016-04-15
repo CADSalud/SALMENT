@@ -15,9 +15,11 @@ pgta_autest<-c("a14c01",paste0("a14c02",1:7),paste0("a14c0",3:5))
 pgta_depre<-c(paste0("a201_",letters[1:8]),paste0("a20",2:4))
 pgta_accid<-c("a1101","a1106","a1201","a1203","a1207")#,"a1207esp")
 pgta_fcrie<-c("a1301","a1303a","a1304","a1306",paste0("a131",1:2))
-pgta<-c(pgta_autest,pgta_depre,pgta_accid,pgta_fcrie)
+pgta_obesidad<-c("a101h","a101ah")
+pgta<-c(pgta_autest,pgta_depre,pgta_accid,pgta_fcrie,pgta_obesidad)
 nom_pgta<-sapply(pgta,function(x) attr(adu,"variable.labels")[x])
-comparaciones<-c("sexo","Edades","est_urb","est_marg","entidad")
+
+comparaciones<-c("sexo","Edades","est_urb","est_marg","entidad","edad")
 
 attr(adu,"variable.labels")["Edades"]<-"Edades"
 edades<-c(paste("De",c(seq(20,70,10)),"a",c(seq(29,79,10)),sep = " "),"80 o mas")
@@ -28,6 +30,30 @@ adu$Edades<-as.factor(cut(adu$edad,c(seq(20,80,10),121),labels=edades,right=FALS
 ######################################
 
 totales<-as.data.frame(adu[c(pgta,comparaciones)])
+
+totales[,"a101h"]<-as.numeric(totales[,"a101h"])
+for(i in 1:length(adu$a101h)){
+  if(is.na(adu$a101h[i])){
+    totales[i,"a101h"]=as.numeric(adu$a101m[i])
+  }
+  else{
+    totales[i,"a101h"]=as.numeric(adu$a101h[i])
+  }
+}
+totales[,"a101h"]<-as.factor(totales[,"a101h"])
+levels(totales[,"a101h"])<-c(1:9,"NS/NR")
+
+totales[,"a101ah"]<-as.numeric(totales[,"a101ah"])
+for(i in 1:length(adu$a101ah)){
+  if(is.na(adu$a101ah[i])){
+    totales[i,"a101ah"]=as.numeric(adu$a101am[i])
+  }
+  else{
+    totales[i,"a101ah"]=as.numeric(adu$a101ah[i])
+  }
+}
+totales[,"a101ah"]<-as.factor(totales[,"a101ah"])
+levels(totales[,"a101ah"])<-c(1:9,"NS/NR")
 
 levels(totales[,26])<-c(rep("Otro",11),"Intento de suicidio","Otro","NS/NR")
 niveles<-c(rep("Diario",3),rep("Semanalmente",3),rep("Mensualmente",2),
@@ -68,7 +94,7 @@ saveRDS(totales_sentido,"Datos/totales_depurado.rds")
 ########### Notas Variables ############
 ########################################
 
-rm(list=c("niveles","pgta_fcrie","pgta_accid","pgta_depre","pgta_autest","dir","hog","edades","adu"))
+rm(list=c("niveles","pgta_fcrie","pgta_accid","pgta_depre","pgta_autest","dir","edades","adu"))
 
 a="Pregunta contestada por adultos mayores de 60 anos sin sustituto/proxy; 17% de la muestra"
 t="Pregunta contestada por toda la muestra"
@@ -80,13 +106,17 @@ d="Pregunta contestada por los adultos que dijeron sufrir o haber sufrido depres
 ntas<-c(ntas,rep(a,7),b,t,d,d)
 
 a="Pregunta contestada por los adultos que dijeron haber sufrido un accidente, 5% de la muestra"
-b="Pregunta contestada por los adultos que dijeron haber sufrido un da?o por agresion, 2% de la muestra"
+b="Pregunta contestada por los adultos que dijeron haber sufrido un dano por agresion, 2% de la muestra"
 ntas<-c(ntas,t,a,t,b,b)
 
 a="Pregunta contestada por los adultos que alguna vez han fumado, 47% de la muestra"
 b="Pregunta contestada por los adultos que actualmente fuman, 19% de la muestra"
 d="Pregunta contestada por los adultos alguna vez han consumido una bebida alcoholica, 76% de la muestra"
 ntas<-c(ntas,t,a,b,b,d,d)
+
+
+a="Pregunta contestada por adultos sin sustituto/proxy; 97% de la muestra"
+ntas<-c(ntas,a,a)
 
 catalogo<-cbind(pgta,nom_pgta,ntas)
 saveRDS(catalogo,"Datos/catalogo.rds")

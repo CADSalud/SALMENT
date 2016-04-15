@@ -6,8 +6,6 @@ library(RColorBrewer)
 library(gridExtra)
 library(RGraphics)
 library(dplyr)
-
-library(RGraphics)
 library(readr)
 library(maptools)
 library(lazyeval)
