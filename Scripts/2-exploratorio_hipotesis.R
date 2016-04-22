@@ -8,11 +8,11 @@ library(RGraphics)
 totales<-readRDS("Datos/totales_depurado.rds")
 catalogo<-readRDS("Datos/catalogo.rds")
 
-logo<-readPNG('~/CAD/logo_cad.png')
+logo<-readPNG('logo_cad.png')
 logo<-rasterGrob(logo,interpolate = TRUE)
 n=nullGrob()
 
-Depresion=totales[ !is.na(totales[,12]) , c(12:18,34:35) ]
+Depresion=totales[ !is.na(totales[,12]) , c(12:18,34:35,40) ]
 
 for(i in 1:7){
   Depresion[,i]<-as.numeric(Depresion[,i])-1
@@ -32,7 +32,7 @@ fig_s<-ggplot(Subdiag, aes(x=sexo,fill=diag) ) + xlab("")+
   geom_bar(position="fill")+ggtitle("Mosaicos de diagnostico contra sexo")+
   scale_y_continuous(name="",labels=percent)+coord_flip()
 
-fig_e<-ggplot(Subdiag[Subdiag[,"diag"]=="Sí",], aes(x=edad) ) + xlab("Edad")+
+fig_e<-ggplot(Subdiag[Subdiag[,"diag"]!="No",], aes(x=edad) ) + xlab("Edad")+
   geom_density()+ggtitle("Distribucion estimada de las personas diagnosticadas con depresion por edad")+
   scale_y_continuous(name=" ")
 
@@ -44,7 +44,7 @@ Hip1<-grid.arrange(fig_s,fig_e,fig_i,layout_matrix=cbind(c(2,2,3),c(2,2,3),c(1,1
 Hip1<-grid.arrange(logo,n,Hip1, layout_matrix=cbind( c(2,3,2),c(2,3,2),c(1,2,2)) ,
                    heights=c(0.6,7.8,0.1),widths=c(5,5,1) )
 
-ggsave("Graficas/Hipotesis/Hip1.png", plot = Hip1, w = 12, h = 8, units="in", type = "cairo-png")
+ggsave("Graficas/Hipotesis/Hip1.png", plot = Hip1, w = 12, h = 8, units="in")#, type = "cairo-png")
 
 ###############################################################
 ####################### Hipotesis 2 ###########################
@@ -74,8 +74,7 @@ stdes<-ggplot(DiDes,aes(x=StDes,y=Freq,fill=diag))+
 
 DifStu<-ObeDep[,c(4,3)]
 DifStu[,2]=(as.numeric(ObeDep[,3])-as.numeric(ObeDep[,2]))
-DifStu<-as.data.frame(prop.table(table(c),1))
-
+DifStu<-as.data.frame(prop.table(table(DifStu),1))
 
 DifSt<-ggplot(DifStu,aes(x=StDes,y=Freq,fill=diag))+
   geom_bar(stat = "identity",position="dodge")+
@@ -85,8 +84,7 @@ DifSt<-ggplot(DifStu,aes(x=StDes,y=Freq,fill=diag))+
 Hip2<-grid.arrange(stper,stdes,DifSt,layout_matrix=cbind( c(1,1,3),c(2,2,3) ) )
 Hip2<-grid.arrange(logo,n,Hip2, layout_matrix=cbind( c(2,3,2),c(2,3,2),c(1,2,2)) ,
                    heights=c(0.6,7.8,0.1),widths=c(5,5,1) )
-ggsave("Graficas/Hipotesis/Hip2.png", plot = Hip2, w = 12, h = 8, units="in", type = "cairo-png")
-
+ggsave("Graficas/Hipotesis/Hip2.png", plot = Hip2, w = 12, h = 8, units="in")
 
 Sexper<-as.data.frame( prop.table(table(ObeDep[,c(5,2)]),1) )
 SePer<-ggplot(Sexper,aes(x=StPer,y=Freq,fill=sexo))+
@@ -95,4 +93,11 @@ SePer<-ggplot(Sexper,aes(x=StPer,y=Freq,fill=sexo))+
   ggtitle("Comparacion de la distribucion de la Stunkard percibida contra sexo")
 SePer<-grid.arrange(logo,n,SePer, layout_matrix=cbind( c(2,3,2),c(2,3,2),c(1,2,2)) ,
                    heights=c(0.6,7.8,0.1),widths=c(5,5,1) )
-ggsave("Graficas/Hipotesis/Hip2b.png", plot = SePer, w = 12, h = 8, units="in", type = "cairo-png")
+ggsave("Graficas/Hipotesis/Hip2b.png", plot = SePer, w = 12, h = 8, units="in")
+
+
+Subdiag<-Depresion %>% transmute(indice=Reduce(`+`,.[1:7]))
+
+
+
+
