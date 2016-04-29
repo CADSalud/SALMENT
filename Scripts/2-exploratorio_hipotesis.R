@@ -4,15 +4,17 @@ library(scales)
 library(gridExtra)
 library(png)
 library(RGraphics)
+library(maptools)
+library(ggmap)
 
 totales<-readRDS("Datos/totales_depurado.rds")
 catalogo<-readRDS("Datos/catalogo.rds")
 
-logo<-readPNG('~/CAD/logo_cad.png')
+logo<-readPNG('logo_cad.png')
 logo<-rasterGrob(logo,interpolate = TRUE)
 n=nullGrob()
 
-Depresion=totales[ !is.na(totales[,12]) , c(12:18,34:35) ]
+Depresion=totales[ !is.na(totales[,12]) , c(12:18,34:35,40) ]
 
 for(i in 1:7){
   Depresion[,i]<-as.numeric(Depresion[,i])-1
@@ -24,16 +26,15 @@ for(i in 1:7){
 ###############################################################
 
 Subdiag<-Depresion %>% transmute(indice=Reduce(`+`,.[1:7])) %>%
-          mutate(indice_depresion = cut( indice , breaks=c(-Inf,8,Inf) , labels=c(0,1) , right=F ),
-                 diag=totales[!is.na(totales[,12]),20], sexo=totales[!is.na(totales[,12]),36],
-                 grupo_Edad=totales[!is.na(totales[,12]),37], edad=totales[!is.na(totales[,12]),41],
-                 marg=totales[!is.na(totales[,12]),39])
+  mutate(indice_depresion = cut( indice , breaks=c(-Inf,8,Inf) , labels=c(0,1) , right=F ),
+         diag=totales[!is.na(totales[,12]),20], sexo=totales[!is.na(totales[,12]),36],
+         grupo_Edad=totales[!is.na(totales[,12]),37], edad=totales[!is.na(totales[,12]),41])
 
 fig_s<-ggplot(Subdiag, aes(x=sexo,fill=diag) ) + xlab("")+
   geom_bar(position="fill")+ggtitle("Mosaicos de diagnostico contra sexo")+
   scale_y_continuous(name="",labels=percent)+coord_flip()
 
-fig_e<-ggplot(Subdiag[Subdiag[,"diag"]=="Sí",], aes(x=edad) ) + xlab("Edad")+
+fig_e<-ggplot(Subdiag[Subdiag[,"diag"]!="No",], aes(x=edad) ) + xlab("Edad")+
   geom_density()+ggtitle("Distribucion estimada de las personas diagnosticadas con depresion por edad")+
   scale_y_continuous(name=" ")
 
@@ -45,7 +46,7 @@ Hip1<-grid.arrange(fig_s,fig_e,fig_i,layout_matrix=cbind(c(2,2,3),c(2,2,3),c(1,1
 Hip1<-grid.arrange(logo,n,Hip1, layout_matrix=cbind( c(2,3,2),c(2,3,2),c(1,2,2)) ,
                    heights=c(0.6,7.8,0.1),widths=c(5,5,1) )
 
-ggsave("Graficas/Hipotesis/Hip1.png", plot = Hip1, w = 12, h = 8, units="in", type = "cairo-png")
+ggsave("Graficas/Hipotesis/Hip1.png", plot = Hip1, w = 12, h = 8, units="in")#, type = "cairo-png")
 
 ###############################################################
 ####################### Hipotesis 2 ###########################
@@ -59,12 +60,21 @@ ObeDep<-Depresion[NoNAObeDep , ]%>%
   mutate(diag=totales[NoNAObeTot,20], sexo=totales[NoNAObeTot,36], edad=totales[NoNAObeTot,41])
 
 DiPer<-as.data.frame( prop.table(table(ObeDep[,c(4,2)]),1) )
+levels(DiPer$diag) <- list(`Sí`='S\xed',`No`='No')
 
 stper<-ggplot(DiPer,aes(x=StPer,y=Freq,fill=diag))+
   geom_bar(stat = "identity",position="dodge")+
-  xlab("Silueta Percibida de Stunkard")+scale_y_continuous(name="")+
-  ggtitle("Comparacion de la distribucion de la Stunkard percibida contra diagnostico")+theme(legend.position="none")
-
+  xlab("Silueta Percibida de Stunkard")+
+  scale_y_continuous(name="")+
+  ggtitle("Comparación de Stunkard percibida vs diagnóstico")+
+  scale_fill_manual(values=c('dodgerblue4','lightgoldenrod1'),
+                    name='Diagnóstico \n de depresión') + 
+  theme(legend.position="right",
+        legend.title = element_text(colour="black", size=10, face="bold"),
+        axis.title = element_text(size=10),
+        axis.text = element_text(color='black'),
+        title=element_text(size=11,face='bold'))
+ggsave("Graficas/Hipotesis/stper.png", plot = stper, w = 12, h = 8, units="in")
 
 DiDes<-as.data.frame( prop.table(table(ObeDep[,c(4,3)]),1) )
 
@@ -75,19 +85,32 @@ stdes<-ggplot(DiDes,aes(x=StDes,y=Freq,fill=diag))+
 
 DifStu<-ObeDep[,c(4,3)]
 DifStu[,2]=(as.numeric(ObeDep[,3])-as.numeric(ObeDep[,2]))
-DifStu<-as.data.frame(prop.table(table(c),1))
-
+DifStu<-as.data.frame(prop.table(table(DifStu),1))
+levels(DifStu$diag) <- list(`Sí`='S\xed',`No`='No')
 
 DifSt<-ggplot(DifStu,aes(x=StDes,y=Freq,fill=diag))+
   geom_bar(stat = "identity",position="dodge")+
   xlab("Diferencia de posiciones entre Stunkard deseada y percibida")+scale_y_continuous(name="")+
   ggtitle("Comparacion de la distribucion de las diferencia entre Stunkard percibida y deseada contra diagnostico")
 
+DifSt2<-ggplot(DifStu%>%filter(StDes%in%c('-8','-7','-6','-5','-4','-3','-2','-1','0')),
+               aes(x=StDes,y=Freq,fill=diag))+
+  geom_bar(stat = "identity",position="dodge")+
+  xlab("Diferencia de posiciones entre Stunkard deseada y percibida")+
+  scale_y_continuous(name="")+
+  scale_fill_manual(values=c('dodgerblue4','lightgoldenrod1')) + 
+  ggtitle("Comparación entre Stunkard percibida y deseada vs diagnóstico") + 
+  theme(legend.position="right",
+        legend.title = element_text(colour="black", size=10, face="bold"),
+        axis.title = element_text(size=10),
+        axis.text = element_text(color='black'),
+        title=element_text(size=11,face='bold'))
+ggsave("Graficas/Hipotesis/DifSt2.png", plot = DifSt2, w = 8, h = 8, units="in")
+
 Hip2<-grid.arrange(stper,stdes,DifSt,layout_matrix=cbind( c(1,1,3),c(2,2,3) ) )
 Hip2<-grid.arrange(logo,n,Hip2, layout_matrix=cbind( c(2,3,2),c(2,3,2),c(1,2,2)) ,
                    heights=c(0.6,7.8,0.1),widths=c(5,5,1) )
-ggsave("Graficas/Hipotesis/Hip2.png", plot = Hip2, w = 12, h = 8, units="in", type = "cairo-png")
-
+ggsave("Graficas/Hipotesis/Hip2.png", plot = Hip2, w = 12, h = 8, units="in")
 
 Sexper<-as.data.frame( prop.table(table(ObeDep[,c(5,2)]),1) )
 SePer<-ggplot(Sexper,aes(x=StPer,y=Freq,fill=sexo))+
@@ -95,10 +118,35 @@ SePer<-ggplot(Sexper,aes(x=StPer,y=Freq,fill=sexo))+
   xlab("Silueta Percibida de Stunkard")+scale_y_continuous(name="")+
   ggtitle("Comparacion de la distribucion de la Stunkard percibida contra sexo")
 SePer<-grid.arrange(logo,n,SePer, layout_matrix=cbind( c(2,3,2),c(2,3,2),c(1,2,2)) ,
-                   heights=c(0.6,7.8,0.1),widths=c(5,5,1) )
-ggsave("Graficas/Hipotesis/Hip2b.png", plot = SePer, w = 12, h = 8, units="in", type = "cairo-png")
+                    heights=c(0.6,7.8,0.1),widths=c(5,5,1) )
+ggsave("Graficas/Hipotesis/Hip2b.png", plot = SePer, w = 12, h = 8, units="in")
 
-prop.table(table(Subdiag[,c(2,3)]),1)
+# Mapas de índice y % de depresión por estado
+edo<-readShapeSpatial("estados_ligero/Mex_Edos")
 
-prop.table(table(Subdiag[,c(2,7)]),2)
-prop.table(table(Subdiag[,c(3,7)]),2)
+edo@data$id<- rownames(edo@data)
+edo_df<- edo %>%
+  fortify(region="id") %>%
+  mutate(id=as.numeric(id))
+
+Subdiag_2 <- Depresion %>% transmute(indice=Reduce(`+`,.[1:7]))
+Subdiag_2$id <- Depresion$entidad - 1
+Subdiag_3 <- Subdiag_2 %>% mutate(`Depresión` = 1*(indice > 7)) %>%
+  #mutate_each(funs(scale),-id) %>%
+  group_by(id) %>%
+  summarise_each(funs(mean)) 
+
+edo_subdiag <- left_join(edo_df, Subdiag_3, by = 'id') 
+
+PorDepMap<-ggplot(data = edo_subdiag, aes(long, lat, group=group)) + 
+  geom_polygon(aes(fill = `Depresión`, group = group),color='black') + 
+  coord_fixed() + theme_nothing(legend = TRUE) +
+  scale_fill_gradient2(low='green',mid='palegoldenrod',high='red',
+                       breaks=pretty_breaks(), labels=percent,
+                       midpoint = 0.17,name='Tasa de depresión\n estatal') +
+  ggtitle('Depresión por entidad') +
+  theme(legend.position="right",legend.key.height = unit(2, "cm"),
+        legend.key.width = unit(0.9,'cm'),
+        legend.title = element_text(colour="black", size=10, face="bold"),
+        title=element_text(size=11,face='bold'))
+ggsave("Graficas/Hipotesis/PorDepMap.png", plot = PorDepMap, w = 12, h = 8, units="in")
