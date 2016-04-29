@@ -3,6 +3,7 @@ library(dplyr)
 library(ggplot2)
 library(scales)
 library(svglite)
+library(maptools)
 
 ############################# Crear Tabla de Depresion #################################################################
 # dir<-'Datos/adultos.sav'
