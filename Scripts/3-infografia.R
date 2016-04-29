@@ -101,12 +101,15 @@ stper<-ggplot( Depresion ,aes(x=StPer,fill=factor(1-posib_dep) ))+
         title=element_text(size=11,face='bold'))
 ggsave("Graficas/Hipotesis/stper.svg", plot = stper, w = 10, h = 8, units="in")
 
-DifSt2<-ggplot(DifStu%>%filter(StDes%in%c('-8','-7','-6','-5','-4','-3','-2','-1','0')),
-               aes(x=StDes,y=Freq,fill=diag))+
-  geom_bar(stat = "identity",position="dodge")+
+
+Depresion$Dif <- as.numeric(Depresion$StDes)-as.numeric(Depresion$StPer)
+DifSt2<-ggplot(Depresion%>%filter(Dif%in%c('-8','-7','-6','-5','-4','-3','-2','-1','0')),
+               aes(x=Dif,fill=factor(1-posib_dep) ))+
+  geom_bar(position="fill")+
   xlab("Diferencia de posiciones entre Stunkard deseada y percibida")+
   scale_y_continuous(name="")+
-  scale_fill_manual(values=c('dodgerblue4','lightgoldenrod1')) + 
+  scale_fill_manual(values=c('dodgerblue4','lightgoldenrod1'),
+                    name='Diagnóstico \n de depresión',labels=c("Posible Depresión","No hay indicios")) + 
   ggtitle("Comparación entre Stunkard percibida y deseada vs diagnóstico") + 
   theme(legend.position="right",
         legend.title = element_text(colour="black", size=10, face="bold"),
@@ -123,8 +126,8 @@ edo_df<- edo %>%
   fortify(region="id") %>%
   mutate(id=as.numeric(id))
 
-Subdiag_2 <- Depresion %>% transmute(indice=Reduce(`+`,.[1:7]))
-Subdiag_2$id <- Depresion$entidad - 1
+Subdiag_2 <- Depresion[,c("entidad","indice")] %>% transmute(id=entidad-1)
+Subdiag_2$indice <- Depresion$indice
 Subdiag_3 <- Subdiag_2 %>% mutate(`Depresión` = 1*(indice > 7)) %>%
   #mutate_each(funs(scale),-id) %>%
   group_by(id) %>%
