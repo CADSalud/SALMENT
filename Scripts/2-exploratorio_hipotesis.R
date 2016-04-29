@@ -26,7 +26,8 @@ for(i in 1:7){
 Subdiag<-Depresion %>% transmute(indice=Reduce(`+`,.[1:7])) %>%
           mutate(indice_depresion = cut( indice , breaks=c(-Inf,8,Inf) , labels=c(0,1) , right=F ),
                  diag=totales[!is.na(totales[,12]),20], sexo=totales[!is.na(totales[,12]),36],
-                 grupo_Edad=totales[!is.na(totales[,12]),37], edad=totales[!is.na(totales[,12]),41])
+                 grupo_Edad=totales[!is.na(totales[,12]),37], edad=totales[!is.na(totales[,12]),41],
+                 marg=totales[!is.na(totales[,12]),39])
 
 fig_s<-ggplot(Subdiag, aes(x=sexo,fill=diag) ) + xlab("")+
   geom_bar(position="fill")+ggtitle("Mosaicos de diagnostico contra sexo")+
@@ -96,3 +97,8 @@ SePer<-ggplot(Sexper,aes(x=StPer,y=Freq,fill=sexo))+
 SePer<-grid.arrange(logo,n,SePer, layout_matrix=cbind( c(2,3,2),c(2,3,2),c(1,2,2)) ,
                    heights=c(0.6,7.8,0.1),widths=c(5,5,1) )
 ggsave("Graficas/Hipotesis/Hip2b.png", plot = SePer, w = 12, h = 8, units="in", type = "cairo-png")
+
+prop.table(table(Subdiag[,c(2,3)]),1)
+
+prop.table(table(Subdiag[,c(2,7)]),2)
+prop.table(table(Subdiag[,c(3,7)]),2)
