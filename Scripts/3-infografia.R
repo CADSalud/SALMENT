@@ -49,33 +49,47 @@ a<-prop.table(table(Depresion[,c("posib_dep","a202")]),1)
 b<-prop.table(table(Depresion[Depresion[Depresion[,"posib_dep"]==1,"a202"]=="Sí","a203"]))
 a[2,1]*b[1]
 
-fig_edad<-ggplot(Depresion[Depresion[,"posib_dep"]==1,], aes(x=edad) ) + xlab("Edad")+
-  geom_density()+ggtitle("Distribucion estimada de las personas con depresion por edad")+
-  scale_y_continuous(name=" ",limits = c(0,0.05))
+fig_edad <- Depresion %>% 
+  select(edad,posib_dep) %>%
+  group_by(edad) %>%
+  summarise(np = n(), posib_dep = mean(posib_dep)) %>%
+  filter(np >= 10 & edad <= 85) %>%
+  ggplot(aes(x = edad, y = posib_dep)) + 
+  xlab("Edad") +
+  geom_point(aes(size = np)) + 
+  geom_smooth(method = 'loess', se = FALSE) + 
+  scale_size(name='Número de \n encuestados',breaks=c(30,100,300,600,900,1200)) +
+  scale_y_continuous(name="Porcentaje de deprimidos",labels = percent) +
+  ggtitle("Porcentaje de deprimidos por edad") +
+  theme_classic()
 
 ggsave("Graficas/Infografia/edad_depresion.svg",plot = fig_edad,w = 12, h = 8, units="in")
 
-fig_sex<-ggplot(Depresion,aes(x=sexo,fill=factor(posib_dep)))+
-  geom_bar(position = 'fill')+
-  xlab("")+coord_flip()+
-  scale_y_continuous(name="",labels = percent)+
-  ggtitle(label = "Depresión por género")+
-  guides(fill=guide_legend(keywidth=0.2,keyheight=0.2,default.unit="inch"))+
-  scale_fill_brewer(palette = "Set1",name="",labels=c("No muestra depresión","Muestra depresión"))+
-  theme(text=element_text(face="bold"),legend.position="bottom",aspect.ratio=1)
+fig_sex <- ggplot(Depresion,aes(x=sexo,fill=factor(posib_dep))) +
+  geom_bar(position = 'fill') +
+  xlab("") +
+  coord_flip() +
+  scale_y_continuous(name="",labels = percent) +
+  ggtitle(label = "Depresión por género") +
+  guides(fill = guide_legend(keywidth=0.2, keyheight=0.2, default.unit="inch")) +
+  scale_fill_brewer(palette = "Set1",name="", labels=c("No muestra depresión","Muestra depresión")) +
+  theme_classic() +
+  theme(text=element_text(face="bold"),legend.position="bottom",aspect.ratio=1) 
 
 ggsave("Graficas/Infografia/sexo_depresion.svg",plot = fig_sex,w = 12, h = 8, units="in")
 
-fig_local<-ggplot(Depresion,aes(x=est_urb,fill=factor(posib_dep)))+
-  geom_bar(position = 'fill')+
-  xlab("")+coord_flip()+
-  scale_y_continuous(name="",labels = percent)+
-  ggtitle(label = "Depresión por tipo de localidad")+
-  guides(fill=guide_legend(keywidth=0.2,keyheight=0.2,default.unit="inch"))+
-  scale_fill_brewer(palette = "Set1",name="",labels=c("No muestra depresión","Muestra depresión"))+
+fig_local <- ggplot(Depresion,aes(x=est_urb,fill=factor(posib_dep))) +
+  geom_bar(position = 'fill') +
+  xlab("") +
+  coord_flip() +
+  scale_y_continuous(name="",labels = percent) +
+  ggtitle(label = "Depresión por tipo de localidad") +
+  guides(fill=guide_legend(keywidth=0.2,keyheight=0.2,default.unit="inch")) +
+  scale_fill_brewer(palette = "Set1",name="",labels=c("No muestra depresión","Muestra depresión")) +
+  theme_classic() +
   theme(text=element_text(face="bold"),legend.position="bottom",aspect.ratio=1)
 
-ggsave("Graficas/Infografia/localidad_depresion.svg",plot = fig_sex,w = 12, h = 8, units="in")
+ggsave("Graficas/Infografia/localidad_depresion.svg",plot = fig_local,w = 12, h = 8, units="in")
 
 prop.table(table(Depresion$est_urb,Depresion$a202),1)
 
@@ -84,40 +98,42 @@ prop.table(table(Depresion$est_urb,Depresion$a203),1)
 
 Depresion<- Depresion[( !is.na(Depresion$StPer) ) & ( !is.na(Depresion$StDes) ),]
 
-
-Depresion$posib_dep2 <- as.ordered(levels(as.factor(Depresion$posib_dep) ))
-# levels(a$posib_dep2)<-list(`Posible Depresión`=1,`No hay indicios`=0)
-
-stper<-ggplot( Depresion ,aes(x=StPer,fill=factor(1-posib_dep) ))+
-  geom_bar(position="fill")+
-  xlab("Silueta Percibida de Stunkard")+
-  scale_y_continuous(name="")+scale_x_discrete(breaks=c(1:9))+
-  ggtitle("Comparación de Stunkard percibida vs diagnóstico")+
+auxDep <- Depresion
+auxDep$StPer <- as.factor(auxDep$StPer)
+stper <- ggplot(auxDep, aes(x = StPer, fill = factor(1-posib_dep))) +
+  geom_bar(position="fill") +
+  xlab("Silueta Percibida de Stunkard") +
+  scale_y_continuous(name="") +
+  scale_x_discrete(breaks = c(1:9), labels = 1:9) +
+  ggtitle("Comparación de Stunkard percibida vs diagnóstico") +
   scale_fill_manual(values=c('dodgerblue4','lightgoldenrod1'),
                     name='Diagnóstico \n de depresión',labels=c("Posible Depresión","No hay indicios")) + 
+  theme_classic() +
   theme(legend.position="right",
         legend.title = element_text(colour="black", size=10, face="bold"),
         axis.title = element_text(size=10),
         axis.text = element_text(color='black'),
         title=element_text(size=11,face='bold'))
-ggsave("Graficas/Hipotesis/stper.svg", plot = stper, w = 10, h = 8, units="in")
+ggsave("Graficas/Infografia/stper.svg", plot = stper, w = 10, h = 8, units="in")
 
 
 Depresion$Dif <- as.numeric(Depresion$StDes)-as.numeric(Depresion$StPer)
-DifSt2<-ggplot(Depresion%>%filter(Dif%in%c('-8','-7','-6','-5','-4','-3','-2','-1','0')),
-               aes(x=Dif,fill=factor(1-posib_dep) ))+
-  geom_bar(position="fill")+
+aux2 <- Depresion%>%filter(Dif%in%c('-8','-7','-6','-5','-4','-3','-2','-1','0'))
+aux2$Dif <- as.factor(aux2$Dif)
+DifSt2 <- ggplot(aux2,aes(x=Dif,fill=factor(1-posib_dep) ))+
+  geom_bar(position="fill") +
   xlab("Diferencia de posiciones entre Stunkard deseada y percibida")+
-  scale_y_continuous(name="")+
+  scale_y_continuous(name="") +
   scale_fill_manual(values=c('dodgerblue4','lightgoldenrod1'),
                     name='Diagnóstico \n de depresión',labels=c("Posible Depresión","No hay indicios")) + 
   ggtitle("Comparación entre Stunkard percibida y deseada vs diagnóstico") + 
+  theme_classic() +
   theme(legend.position="right",
         legend.title = element_text(colour="black", size=10, face="bold"),
         axis.title = element_text(size=10),
         axis.text = element_text(color='black'),
-        title=element_text(size=11,face='bold'))
-ggsave("Graficas/Hipotesis/DifSt2.svg", plot = DifSt2, w = 8, h = 8, units="in")
+        title=element_text(size=11,face='bold')) 
+ggsave("Graficas/Infografia/DifSt2.svg", plot = DifSt2, w = 10, h = 8, units="in")
 
 # Mapas de índice y % de depresión por estado
 edo<-readShapeSpatial("estados_ligero/Mex_Edos")
@@ -136,15 +152,16 @@ Subdiag_3 <- Subdiag_2 %>% mutate(`Depresión` = 1*(indice > 7)) %>%
 
 edo_subdiag <- left_join(edo_df, Subdiag_3, by = 'id') 
 
-PorDepMap<-ggplot(data = edo_subdiag, aes(long, lat, group=group)) + 
+PorDepMap <- ggplot(data = edo_subdiag, aes(long, lat, group=group)) + 
   geom_polygon(aes(fill = `Depresión`, group = group),color='black') + 
-  coord_fixed() + theme_nothing(legend = TRUE) +
-  scale_fill_gradient2(low='green',mid='palegoldenrod',high='red',
+  coord_fixed() +
+  scale_fill_gradient2(low='aliceblue',mid='lightskyblue3',high='midnightblue',
                        breaks=pretty_breaks(), labels=percent,
                        midpoint = 0.17,name='Tasa de depresión\n estatal') +
   ggtitle('Depresión por entidad') +
   theme(legend.position="right",legend.key.height = unit(2, "cm"),
         legend.key.width = unit(0.9,'cm'),
         legend.title = element_text(colour="black", size=10, face="bold"),
-        title=element_text(size=11,face='bold'))
+        title=element_text(size=11,face='bold')) +
+  theme_classic()
 ggsave("Graficas/Hipotesis/PorDepMap.svg", plot = PorDepMap, w = 12, h = 8, units="in")
