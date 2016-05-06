@@ -56,7 +56,7 @@ fig_edad <- Depresion %>%
   filter(np >= 10 & edad <= 85) %>%
   ggplot(aes(x = edad, y = posib_dep)) + 
   xlab("Edad") +
-  geom_point(aes(size = np)) + 
+  #geom_point(aes(size = np)) + 
   geom_smooth(method = 'loess', se = FALSE) + 
   scale_size(name='Número de \n encuestados',breaks=c(30,100,300,600,900,1200)) +
   scale_y_continuous(name="Porcentaje de deprimidos",labels = percent) +
@@ -164,4 +164,4 @@ PorDepMap <- ggplot(data = edo_subdiag, aes(long, lat, group=group)) +
         legend.title = element_text(colour="black", size=10, face="bold"),
         title=element_text(size=11,face='bold')) +
   theme_classic()
-ggsave("Graficas/Hipotesis/PorDepMap.svg", plot = PorDepMap, w = 12, h = 8, units="in")
+ggsave("Graficas/Infografia/PorDepMap.svg", plot = PorDepMap, w = 12, h = 8, units="in")
