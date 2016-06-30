@@ -1,0 +1,328 @@
+\documentclass{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,es-nodecimaldot]{babel}
+\usepackage{Sweave}
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage{subfig}
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+<<echo=FALSE>>=
+#################
+#### ENSANUT ####
+#################
+
+## Adultos
+## autoestima y satisfaccion
+## preguntas a14c01, a14c021-027, a14c03, a14c04, a14c05
+## Depresion
+## a201_a-h, a202, a203, a204
+## Accidentes por alcohol y drogas
+## a1106 del total de a1101 con respuesta 1
+## Agresion y violencia
+## a1207, a1203 con respuesta 12, del total a1201 con respuesta 1
+## Factores de riesgo
+## a1301-2, a1303_a, a1304, a1306, a1311-12
+
+library(foreign)
+library(plyr)
+library(scales)
+library(xtable)
+library(ggplot2)
+library(reshape2)
+library(RColorBrewer)
+library(gridExtra)
+library(RGraphics)
+library(xtable)
+options(xtable.floating = FALSE)
+options(xtable.timestamp = "")
+
+dir_adu<-'../salud/Adultos.sav'
+adu<-read.spss(dir_adu,to.data.frame = T)
+dir_hog='../salud/Hogar.sav'
+hog=read.spss(dir_hog,to.data.frame = T)
+
+adu$entidad<-as.factor(adu$entidad)
+levels(adu$entidad)[match(levels(adu$entidad),levels(adu$entidad))]<-levels(hog$entidad)
+
+rm(list = c('hog','dir'))
+
+pgta_autest<-c("a14c01",paste0("a14c02",1:7),paste0("a14c0",3:5))
+pgta_depre<-c(paste0("a201_",letters[1:8]),paste0("a20",2:4))
+pgta_accid<-c("a1101","a1106","a1201","a1203","a1207")#,"a1207esp")
+pgta_fcrie<-c("a1301","a1303a","a1304","a1306",paste0("a131",1:2))
+pgta<-c(pgta_autest,pgta_depre,pgta_accid,pgta_fcrie)
+nom_pgta<-sapply(pgta,function(x) attr(adu,"variable.labels")[x])
+nom_pgta <- iconv(nom_pgta,from='latin1',to='utf-8')
+comparaciones<-c("sexo","Edades","est_urb","est_marg","entidad","edad")
+
+attr(adu,"variable.labels")["Edades"]<-"Edades"
+
+edades<-paste("De",c(seq(20,60,10),90),"a",c(seq(29,59,10),89,120),sep = " ")
+adu$Edades<-as.factor(cut(adu$edad,c(seq(20,60,10),90,121),labels=edades,right=FALSE))
+
+totales<-as.data.frame(adu[c(pgta,comparaciones)])
+levels(totales[,26])<-c(rep("Otro",11),"Intento de suicidio","Otro","NS/NR")
+
+library(stringr)
+pgta <- c(pgta,comparaciones)
+names(nom_pgta) <- NULL
+cols_pgta <- c(pgta_autest,pgta_depre,pgta_accid,pgta_fcrie)
+catalogo_pgtas <- data.frame(pgta = cols_pgta, nom_pgta = nom_pgta)
+
+cols <- colnames(totales)
+for(col in cols){
+  totales[[col]] <- iconv(totales[[col]],from='latin1',to='utf-8')
+}
+
+saveRDS(object = catalogo_pgtas, file = 'catalogo_pgtas.rds')
+saveRDS(object = totales, file = 'totales.rds')
+
+ tato<-function (i){
+  cat("\n \\begin{minipage}{\\columnwidth}")
+  tab=as.data.frame(table(totales[,i])/sum(table(totales[,i])))
+  colnames(tab)<-c("","Porcentaje")
+  cat("Pregunta$",pgta[i],"$\\\\\n")
+  x<-xtable(tab,auto=TRUE,digits=5)
+  n=nrow(tab)
+  pob=round(sum(!is.na(totales[,i]))/46277,digits=2)
+  larow=paste0("\\% poblacion & ",pob,"\\\\")
+  align(x)<-paste0(paste0(rep("|c",ncol(tab)+1),collapse = ""),"|")
+  print(x, include.rownames = FALSE,comment = FALSE,add.to.row = list(pos=list(n), command = larow))
+  cat("\\newline\\vspace*{0.5 pt}\\newline\\\\\n")
+  cat("\\end{minipage}\n")
+}
+
+
+tato2<-function (i,j){
+  cat("\n \\begin{minipage}{\\columnwidth}")
+  tab=(table(totales[,c(pgta[i],comparaciones[j])])/sum(table(totales[,i])))
+  cat("Pregunta",pgta[i],"\\\\\n")
+  x<-xtable(tab,auto=TRUE,digits=5)
+  n=nrow(tab)
+  pob=round(sum(!is.na(totales[,i]))/46277,digits=2)
+  larow=paste0("\\% poblacion & ",pob,"&\\\\")
+  align(x)<-paste0(paste0(rep("|c",ncol(tab)+1),collapse = ""),"|")
+  print(x, include.rownames = TRUE,comment = FALSE,add.to.row = list(pos=list(n), command = larow))
+  cat("\\newline\\vspace*{0.5 pt}\\newline\\\\\n")
+  cat("\\end{minipage}\n")
+}
+
+tato3<-function (i,j){
+  cat("\n \\begin{minipage}{\\columnwidth}")
+  tab=(table(totales[,c(pgta[i],comparaciones[j])])/sum(table(totales[,i])))
+  cat("Pregunta",pgta[i],"\\\\\n")
+  x<-xtable(t(tab),auto=TRUE,digits=5)
+  n=nrow(t(tab))
+  pob=round(sum(!is.na(totales[,i]))/46277,digits=2)
+  larow=paste0("\\% poblacion & ",pob,"&\\\\")
+  align(x)<-paste0(paste0(rep("|c",ncol(x)+1),collapse = ""),"|")
+  print(x, include.rownames = TRUE,comment = FALSE,add.to.row = list(pos=list(n), command = larow))
+  cat("\\newline\\vspace*{0.5 pt}\\newline\\\\\n")
+  cat("\\end{minipage}\n")
+}
+
+@
+\section{Porcentaje de totales}
+\subsection{Preguntas de Autoestima y Satisfaccion}
+\begin{multicols}{2}
+<<results=tex,echo=FALSE>>=
+for(i in 1:11){tato(i)}
+@
+
+\end{multicols}
+
+\subsection{Preguntas Depresion}
+\begin{minipage}{\columnwidth}
+<<results=tex,echo=FALSE>>=
+for(i in 12:17){tato(i)}
+@
+\end{minipage}
+
+<<results=tex,echo=FALSE>>=
+tato(18)
+@
+
+\begin{multicols}{2}
+<<results=tex,echo=FALSE>>=
+for(i in 19:22){tato(i)}
+@
+\end{multicols}
+
+\subsection{Preguntas Accidentes por alcohol o drogas}
+\begin{multicols}{2}
+<<results=tex,echo=FALSE>>=
+for(i in 23:24){tato(i)}
+@
+\end{multicols}
+
+\subsection{Preguntas Agresion y violencia}
+
+
+\begin{multicols}{2}
+<<results=tex,echo=FALSE>>=
+for(i in 25:27){tato(i)}
+@
+\end{multicols}
+
+\subsection{Preguntas Factores de Riesgo}
+<<results=tex,echo=FALSE>>=
+for(i in 28:33){tato(i)}
+@
+
+
+\section{Porcentajes por sexo}
+\subsection{Preguntas de Autoestima y Satisfaccion}
+<<results=tex,echo=FALSE>>=
+for(i in 1:11){tato2(i,1)}
+@
+
+\subsection{Preguntas Depresion}
+\begin{minipage}{\columnwidth}
+<<results=tex,echo=FALSE>>=
+for(i in 12:17){tato2(i,1)}
+@
+\end{minipage}
+
+<<results=tex,echo=FALSE>>=
+tato2(18,1)
+@
+
+\begin{multicols}{2}
+<<results=tex,echo=FALSE>>=
+for(i in 19:22){tato2(i,1)}
+@
+\end{multicols}
+
+\subsection{Preguntas Accidentes por alcohol o drogas}
+\begin{multicols}{2}
+<<results=tex,echo=FALSE>>=
+for(i in 23:24){tato2(i,1)}
+@
+\end{multicols}
+
+\subsection{Preguntas Agresion y violencia}
+
+
+\begin{multicols}{2}
+<<results=tex,echo=FALSE>>=
+for(i in 25:27){tato2(i,1)}
+@
+\end{multicols}
+
+\subsection{Preguntas Factores de Riesgo}
+<<results=tex,echo=FALSE>>=
+for(i in 28:33){tato2(i,1)}
+@
+
+\section{Porcentajes por Rangos de Edad}
+\subsection{Preguntas de Autoestima y Satisfaccion}
+<<results=tex,echo=FALSE>>=
+for(i in 1:11){tato2(i,2)}
+@
+
+\subsection{Preguntas Depresion}
+<<results=tex,echo=FALSE>>=
+for(i in 12:22){tato2(i,2)}
+@
+
+\subsection{Preguntas Accidentes por alcohol o drogas}
+<<results=tex,echo=FALSE>>=
+for(i in 23:24){tato2(i,2)}
+@
+
+\subsection{Preguntas Agresion y violencia}
+
+<<results=tex,echo=FALSE>>=
+for(i in 25:27){tato2(i,2)}
+@
+
+\subsection{Preguntas Factores de Riesgo}
+<<results=tex,echo=FALSE>>=
+for(i in 28:33){tato2(i,2)}
+@
+
+\section{Porcentajes por Entidad}
+\subsection{Preguntas de Autoestima y Satisfaccion}
+<<results=tex,echo=FALSE>>=
+for(i in 1:11){tato3(i,5)}
+@
+
+\subsection{Preguntas Depresion}
+<<results=tex,echo=FALSE>>=
+for(i in 12:22){tato3(i,5)}
+@
+
+\subsection{Preguntas Accidentes por alcohol o drogas}
+<<results=tex,echo=FALSE>>=
+for(i in 23:24){tato3(i,5)}
+@
+
+\subsection{Preguntas Agresion y violencia}
+<<results=tex,echo=FALSE>>=
+for(i in 25:27){tato3(i,5)}
+@
+
+\subsection{Preguntas Factores de Riesgo}
+<<results=tex,echo=FALSE>>=
+for(i in 28:33){tato3(i,5)}
+@
+
+\section{Porcentajes por tipo de localidad}
+\subsection{Preguntas de Autoestima y Satisfaccion}
+<<results=tex,echo=FALSE>>=
+for(i in 1:11){tato2(i,3)}
+@
+
+\subsection{Preguntas Depresion}
+<<results=tex,echo=FALSE>>=
+for(i in 12:22){tato2(i,3)}
+@
+
+\subsection{Preguntas Accidentes por alcohol o drogas}
+<<results=tex,echo=FALSE>>=
+for(i in 23:24){tato2(i,3)}
+@
+
+\subsection{Preguntas Agresion y violencia}
+
+<<results=tex,echo=FALSE>>=
+for(i in 25:27){tato2(i,3)}
+@
+
+\subsection{Preguntas Factores de Riesgo}
+<<results=tex,echo=FALSE>>=
+for(i in 28:33){tato2(i,3)}
+@
+
+\section{Porcentajes por Marginacion}
+\subsection{Preguntas de Autoestima y Satisfaccion}
+<<results=tex,echo=FALSE>>=
+for(i in 1:11){tato2(i,4)}
+@
+
+\subsection{Preguntas Depresion}
+<<results=tex,echo=FALSE>>=
+for(i in 12:22){tato2(i,4)}
+@
+
+\subsection{Preguntas Accidentes por alcohol o drogas}
+<<results=tex,echo=FALSE>>=
+for(i in 23:24){tato2(i,4)}
+@
+
+\subsection{Preguntas Agresion y violencia}
+
+<<results=tex,echo=FALSE>>=
+for(i in 25:27){tato2(i,4)}
+@
+
+\subsection{Preguntas Factores de Riesgo}
+
+<<results=tex,echo=FALSE>>=
+for(i in 28:33){tato2(i,4)}
+@
+
+\end{document}
