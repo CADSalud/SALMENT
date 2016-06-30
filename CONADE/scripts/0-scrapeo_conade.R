@@ -76,7 +76,49 @@ res1 <- mclapply(7863:19892, obten_datos, mc.cores = 4)
 res11 <- lapply(res1, function(x){return(x[[1]])})
 espacios_deportivos11 <- Reduce(bind_rows, res11)
 
-res21 <- lapply(res, function(x){return(x[[2]])})
+res21 <- lapply(res1, function(x){return(x[[2]])})
 espacios_deportivos21 <- Reduce(bind_rows, res21)
 
-saveRDS(object = res11, file = '../output/res11.rds')
+saveRDS(object = espacios_deportivos11, file = 'data/espacios_deportivos11.rds')
+saveRDS(object = espacios_deportivos21, file = 'data/espacios_deportivos21.rds')
+
+rm(res1,res11,espacios_deportivos11,res21,espacios_deportivos21)
+
+res2 <- mclapply(19893:31922, obten_datos, mc.cores = 4)
+
+res12 <- lapply(res2, function(x){return(x[[1]])})
+espacios_deportivos12 <- Reduce(bind_rows, res12)
+
+res22 <- lapply(res2, function(x){return(x[[2]])})
+espacios_deportivos22 <- Reduce(bind_rows, res22)
+
+saveRDS(object = espacios_deportivos12, file = 'data/espacios_deportivos12.rds')
+saveRDS(object = espacios_deportivos22, file = 'data/espacios_deportivos22.rds')
+
+rm(res2,res12,espacios_deportivos12,res22,espacios_deportivos22)
+
+res3 <- mclapply(31923:43952, obten_datos, mc.cores = 4)
+
+res13 <- lapply(res3, function(x){return(x[[1]])})
+espacios_deportivos13 <- Reduce(bind_rows, res13)
+
+res23 <- lapply(res3, function(x){return(x[[2]])})
+espacios_deportivos23 <- Reduce(bind_rows, res23)
+
+saveRDS(object = espacios_deportivos13, file = 'data/espacios_deportivos13.rds')
+saveRDS(object = espacios_deportivos23, file = 'data/espacios_deportivos23.rds')
+
+rm(res3,res13,espacios_deportivos13,res23,espacios_deportivos23)
+
+res4 <- mclapply(43953:55982, obten_datos, mc.cores = 4)
+
+res14 <- lapply(res4, function(x){return(x[[1]])})
+espacios_deportivos14 <- Reduce(bind_rows, res14)
+
+res24 <- lapply(res4, function(x){return(x[[2]])})
+espacios_deportivos24 <- Reduce(bind_rows, res24)
+
+saveRDS(object = espacios_deportivos14, file = 'data/espacios_deportivos14.rds')
+saveRDS(object = espacios_deportivos24, file = 'data/espacios_deportivos24.rds')
+
+rm(res4,res14,espacios_deportivos14,res24,espacios_deportivos24)
